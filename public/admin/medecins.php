@@ -288,18 +288,7 @@ try {
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="admin-sidebar">
-        <h2>👨‍⚕️ EasyConsult</h2>
-        <ul class="admin-menu">
-            <li><a href="index.php"><i class="fa fa-chart-line"></i> Mon Dashboard</a></li>
-            <li><a href="super.php"><i class="fa fa-globe"></i> Vue Globale</a></li>
-            <li><a href="consultations.php"><i class="fa fa-calendar"></i> Consultations</a></li>
-            <li><a href="caisse.php"><i class="fa fa-money-bill"></i> Caisse</a></li>
-            <li><a href="medecins.php" class="active"><i class="fa fa-users-doctor"></i> Médecins</a></li>
-            <li><a href="../logout.php"><i class="fa fa-sign-out"></i> Déconnexion</a></li>
-        </ul>
-    </div>
+    <?php include __DIR__ . '/_sidebar.php'; ?>
 
     <!-- Main Content -->
     <div class="admin-main">

@@ -136,16 +136,7 @@ try {
             transition: all 0.3s ease;
             border-left: 4px solid transparent;
         }
-
-        .admin-menu a:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-left-color: white;
-            padding-left: 1.75rem;
-        }
-
-        .admin-menu a.active {
-            background: rgba(255, 255, 255, 0.2);
-            border-left-color: white;
+        <?php include __DIR__ . '/_sidebar.php'; ?>
         }
 
         .admin-main {

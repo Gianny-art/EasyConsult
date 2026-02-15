@@ -350,19 +350,7 @@ try {
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="admin-sidebar">
-        <h2>👨‍⚕️ EasyConsult</h2>
-        <ul class="admin-menu">
-            <li><a href="./index.php" class="active">📊 Mon Dashboard</a></li>
-            <li><a href="./super.php">🌐 Vue Globale</a></li>
-            <li><a href="./consultations.php">📋 Consultations</a></li>
-            <li><a href="./caisse.php">💰 Caisse/Paiements</a></li>
-            <li><a href="./medecins.php">👨‍⚕️ Médecins</a></li>
-            <li><a href="./profil.php">⚙️ Mon profil</a></li>
-            <li><a href="../logout.php">🚪 Déconnexion</a></li>
-        </ul>
-    </div>
+    <?php include __DIR__ . '/_sidebar.php'; ?>
 
     <!-- Main Content -->
     <div class="admin-main">

@@ -304,17 +304,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="admin-sidebar">
-        <h2>📋 EasyConsult</h2>
-        <ul class="admin-menu">
-            <li><a href="./index.php"><i class="fa fa-chart-line"></i> Tableau de bord</a></li>
-            <li><a href="./consultations.php"><i class="fa fa-calendar-check"></i> Consultations</a></li>
-            <li><a href="./caisse.php"><i class="fa fa-cash-register"></i> Caisse</a></li>
-            <li><a href="./profil.php" class="active"><i class="fa fa-user-circle"></i> Mon profil</a></li>
-            <li><a href="../logout.php"><i class="fa fa-sign-out"></i> Déconnexion</a></li>
-        </ul>
-    </div>
+    <?php include __DIR__ . '/_sidebar.php'; ?>
 
     <!-- Main Content -->
     <div class="admin-main">
