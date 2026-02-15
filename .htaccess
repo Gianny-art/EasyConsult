@@ -1,13 +1,10 @@
+DirectoryIndex index.php
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
-    
-    # Don't rewrite real files or directories
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
-    
-    # Rewrite all other requests to index.php
-    RewriteRule ^(.*)$ index.php?path=$1 [L,QSA]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/index.php?path=$1 [L,QSA]
 </IfModule>
 
