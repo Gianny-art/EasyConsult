@@ -1,21 +1,35 @@
 <?php
+require_once __DIR__ . '/../../lib/db.php';
 session_start();
-require __DIR__ . '/../../lib/db.php';
-require __DIR__ . '/../../lib/nav.php';
 
 // Vérifier que le médecin est connecté
 if (!isset($_SESSION['doctor_id'])) {
-    header('Location: ./login.php');
+    header('Location: ../login.php');
     exit;
 }
 
-$doctor_id = $_SESSION['doctor_id'];
-$doctor_name = $_SESSION['doctor_name'] ?? 'Médecin';
 $pdo = get_db();
+$doctor_id = $_SESSION['doctor_id'];
 
-// Récupérer les consultations du médecin
-$filter = $_GET['filter'] ?? 'all'; // all, today, week, month
+// Récupérer les infos du médecin
+try {
+    $stmt = $pdo->prepare('SELECT * FROM doctors WHERE id = ?');
+    $stmt->execute([$doctor_id]);
+    $doctor = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$doctor) {
+        session_destroy();
+        header('Location: ../login.php');
+        exit;
+    }
+} catch (Exception $e) {
+    die('Erreur: ' . htmlspecialchars($e->getMessage()));
+}
 
+// Filtre
+$filter = $_GET['filter'] ?? 'all';
+
+// Récupérer les consultations
 $query = 'SELECT c.*, COALESCE(p.name, "Patient Anonyme") as patient_name, p.email
           FROM consultations c
           LEFT JOIN patients p ON c.patient_id = p.id
@@ -23,7 +37,6 @@ $query = 'SELECT c.*, COALESCE(p.name, "Patient Anonyme") as patient_name, p.ema
 
 $params = ['doctor_id' => $doctor_id];
 
-// Appliquer le filtre
 if ($filter === 'today') {
     $query .= ' AND DATE(c.date) = CURDATE()';
 } elseif ($filter === 'week') {
@@ -40,8 +53,13 @@ try {
     $consultations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $consultations = [];
-    $error = 'Erreur lors du chargement des consultations';
+    $error = 'Erreur lors du chargement';
 }
+
+// Statistiques
+$total = count($consultations);
+$completed = count(array_filter($consultations, function($c) { return $c['status'] === 'completed'; }));
+$pending = count(array_filter($consultations, function($c) { return $c['status'] === 'pending'; }));
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -49,453 +67,399 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consultations - EasyConsult Admin</title>
+    <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary: #0066cc;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .admin-container {
             min-height: 100vh;
-            padding: 20px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #f0fdf4 100%);
+            padding: 2rem;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .admin-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--primary), #0052a3);
             color: white;
-            padding: 30px;
+            padding: 2rem 0;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
         }
 
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 5px;
+        .admin-sidebar h2 {
+            padding: 0 1.5rem;
+            margin: 0 0 2rem 0;
+            font-size: 1.1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 1.5rem;
         }
 
-        .header p {
-            opacity: 0.9;
-            font-size: 14px;
-        }
-
-        .menu {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f8f9fa;
-            padding: 15px 30px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .menu ul {
+        .admin-menu {
             list-style: none;
-            display: flex;
-            gap: 20px;
-            flex: 1;
+            padding: 0;
+            margin: 0;
         }
 
-        .menu a {
+        .admin-menu li {
+            padding: 0;
+        }
+
+        .admin-menu a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            transition: color 0.3s;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .admin-menu a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-left-color: white;
+            padding-left: 1.75rem;
+        }
+
+        .admin-menu a.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-left-color: white;
+        }
+
+        .admin-main {
+            margin-left: 250px;
+        }
+
+        .admin-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .admin-header h1 {
+            margin: 0;
+            color: var(--primary);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 1rem;
         }
 
-        .menu a:hover {
-            color: #667eea;
-        }
-
-        .menu a.active {
-            color: #667eea;
-            border-bottom: 2px solid #667eea;
-        }
-
-        .filters {
-            padding: 20px 30px;
-            background: #f8f9fa;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .filters a {
-            padding: 8px 15px;
-            border-radius: 20px;
-            background: white;
-            text-decoration: none;
-            color: #333;
-            border: 1px solid #ddd;
-            transition: all 0.3s;
-            font-size: 14px;
-        }
-
-        .filters a:hover,
-        .filters a.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .stat-cards {
+        .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
 
         .stat-card {
             background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            animation: slideUp 0.5s ease-out;
         }
 
-        .stat-card .label {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 10px;
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
-        .stat-card .value {
-            font-size: 32px;
-            font-weight: bold;
-            color: #667eea;
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .content-section h2 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #6b7280;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
         }
 
         .consultations-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 1rem;
         }
 
         .consultations-table thead {
-            background: #f8f9fa;
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
         }
 
         .consultations-table th {
-            padding: 15px;
+            padding: 1rem;
             text-align: left;
             font-weight: 600;
-            color: #333;
-            border-bottom: 2px solid #e0e0e0;
-            font-size: 14px;
+            color: #1f2937;
+            font-size: 0.9rem;
         }
 
         .consultations-table td {
-            padding: 15px;
-            border-bottom: 1px solid #e0e0e0;
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            color: #6b7280;
         }
 
         .consultations-table tbody tr:hover {
-            background: #f8f9fa;
+            background: #f9fafb;
         }
 
         .status-badge {
             display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 0.35rem 0.75rem;
+            border-radius: 0.35rem;
+            font-size: 0.85rem;
             font-weight: 600;
         }
 
-        .status-completed {
-            background: #d4edda;
-            color: #155724;
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
         }
 
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
+        .status-completed {
+            background: #dcfce7;
+            color: #15803d;
         }
 
         .status-cancelled {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .action-btn {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            text-decoration: none;
-            display: inline-block;
-            transition: all 0.3s;
-        }
-
-        .action-btn.view {
-            background: #667eea;
-            color: white;
-        }
-
-        .action-btn.view:hover {
-            background: #5568d3;
-        }
-
-        .action-btn.cancel {
-            background: #dc3545;
-            color: white;
-            border: none;
-        }
-
-        .action-btn.cancel:hover {
-            background: #c82333;
+            background: #fee2e2;
+            color: #991b1b;
         }
 
         .empty-state {
             text-align: center;
-            padding: 40px;
-            color: #999;
+            padding: 3rem;
+            color: #9ca3af;
         }
 
         .empty-state i {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 3rem;
+            margin-bottom: 1rem;
             opacity: 0.5;
         }
 
-        .mobile-card {
-            display: none;
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @media (max-width: 768px) {
-            .header {
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 20px;
-            }
-
-            .menu {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-
-            .menu ul {
-                flex-direction: column;
-                gap: 10px;
+            .admin-sidebar {
                 width: 100%;
+                height: auto;
+                position: relative;
+                padding: 1rem 0;
+            }
+
+            .admin-menu {
+                display: flex;
+                gap: 0;
+                flex-wrap: wrap;
+            }
+
+            .admin-menu a {
+                padding: 0.75rem 1rem;
+                font-size: 0.85rem;
+            }
+
+            .admin-main {
+                margin-left: 0;
+                padding-bottom: 76px;
+            }
+
+            .admin-header {
+                padding: 1rem;
+            }
+
+            .admin-header h1 {
+                font-size: 1.25rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
             }
 
             .consultations-table {
-                display: none;
+                font-size: 0.85rem;
             }
 
-            .mobile-card {
-                display: block;
-            }
-
-            .mobile-card-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: start;
-                margin-bottom: 12px;
-            }
-
-            .mobile-card-title {
-                font-weight: 600;
-                color: #333;
-            }
-
-            .mobile-card-status {
-                font-size: 12px;
-            }
-
-            .mobile-card-info {
-                font-size: 13px;
-                color: #666;
-                margin-bottom: 8px;
-            }
-
-            .mobile-card-footer {
-                display: flex;
-                gap: 8px;
-                margin-top: 12px;
-            }
-
-            .mobile-card-footer a {
-                flex: 1;
-                text-align: center;
-            }
-
-            .content {
-                padding: 15px;
-            }
-
-            .stat-cards {
-                grid-template-columns: 1fr;
+            .consultations-table th,
+            .consultations-table td {
+                padding: 0.75rem 0.5rem;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📋 Consultations</h1>
-            <p>Gestion de vos consultations</p>
-        </div>
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+        <h2>📋 EasyConsult</h2>
+        <ul class="admin-menu">
+            <li><a href="./index.php"><i class="fa fa-chart-line"></i> Tableau de bord</a></li>
+            <li><a href="./consultations.php" class="active"><i class="fa fa-calendar-check"></i> Consultations</a></li>
+            <li><a href="./caisse.php"><i class="fa fa-cash-register"></i> Caisse</a></li>
+            <li><a href="../logout.php"><i class="fa fa-sign-out"></i> Déconnexion</a></li>
+        </ul>
+    </div>
 
-        <div class="menu">
-            <ul>
-                <li><a href="./index.php">📊 Tableau de bord</a></li>
-                <li><a href="./consultations.php" class="active">📋 Consultations</a></li>
-                <li><a href="./caisse.php">💰 Caisse</a></li>
-                <li><a href="./logout.php">🚪 Déconnexion</a></li>
-            </ul>
-        </div>
+    <!-- Main Content -->
+    <div class="admin-main">
+        <div class="admin-container">
+            <!-- Header -->
+            <div class="admin-header">
+                <h1>
+                    <i class="fa fa-stethoscope"></i>
+                    Consultations - Dr. <?php echo htmlspecialchars($doctor['name']); ?>
+                </h1>
+            </div>
 
-        <div class="filters">
-            <a href="?filter=all" class="<?php echo $filter === 'all' ? 'active' : ''; ?>">Toutes</a>
-            <a href="?filter=today" class="<?php echo $filter === 'today' ? 'active' : ''; ?>">Aujourd'hui</a>
-            <a href="?filter=week" class="<?php echo $filter === 'week' ? 'active' : ''; ?>">Cette semaine</a>
-            <a href="?filter=month" class="<?php echo $filter === 'month' ? 'active' : ''; ?>">Ce mois</a>
-        </div>
-
-        <div class="content">
-            <?php if (isset($error)): ?>
-                <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                    <i class="fa fa-exclamation-circle"></i> <?php echo htmlspecialchars($error); ?>
-                </div>
-            <?php endif; ?>
-
-            <!-- Statistiques -->
-            <div class="stat-cards">
+            <!-- Stats -->
+            <div class="dashboard-grid">
                 <div class="stat-card">
-                    <div class="label">Total</div>
-                    <div class="value"><?php echo count($consultations); ?></div>
+                    <div class="stat-label">Total</div>
+                    <div class="stat-value"><?php echo $total; ?></div>
                 </div>
                 <div class="stat-card">
-                    <div class="label">Complétées</div>
-                    <div class="value"><?php echo count(array_filter($consultations, function($c) { return $c['status'] === 'completed'; })); ?></div>
+                    <div class="stat-label">Complétées</div>
+                    <div class="stat-value"><?php echo $completed; ?></div>
                 </div>
                 <div class="stat-card">
-                    <div class="label">En attente</div>
-                    <div class="value"><?php echo count(array_filter($consultations, function($c) { return $c['status'] === 'pending'; })); ?></div>
+                    <div class="stat-label">En attente</div>
+                    <div class="stat-value"><?php echo $pending; ?></div>
                 </div>
             </div>
 
-            <!-- Tableau Desktop -->
-            <?php if (count($consultations) > 0): ?>
-                <table class="consultations-table">
-                    <thead>
-                        <tr>
-                            <th>Date & Heure</th>
-                            <th>Patient</th>
-                            <th>Email</th>
-                            <th>Statut</th>
-                            <th>Type</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($consultations as $consultation): ?>
-                            <tr>
-                                <td>
-                                    <strong><?php echo date('d/m/Y H:i', strtotime($consultation['date'])); ?></strong>
-                                </td>
-                                <td><?php echo htmlspecialchars($consultation['patient_name']); ?></td>
-                                <td><?php echo htmlspecialchars($consultation['email'] ?? 'N/A'); ?></td>
-                                <td>
-                                    <span class="status-badge status-<?php echo htmlspecialchars($consultation['status']); ?>">
-                                        <?php 
-                                            $status_map = [
-                                                'pending' => '⏳ En attente',
-                                                'completed' => '✅ Complétée',
-                                                'cancelled' => '❌ Annulée'
-                                            ];
-                                            echo $status_map[$consultation['status']] ?? ucfirst($consultation['status']);
-                                        ?>
-                                    </span>
-                                </td>
-                                <td><?php echo htmlspecialchars($consultation['type'] ?? 'Standard'); ?></td>
-                                <td>
-                                    <a href="#" class="action-btn view" onclick="viewDetails(<?php echo htmlspecialchars(json_encode($consultation)); ?>); return false;">
-                                        <i class="fa fa-eye"></i> Détails
-                                    </a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php else: ?>
-                <div class="empty-state">
-                    <i class="fa fa-calendar-check"></i>
-                    <h3>Aucune consultation trouvée</h3>
-                    <p>Vous n'avez pas de consultation pour cette période.</p>
-                </div>
-            <?php endif; ?>
+            <!-- Content Section -->
+            <div class="content-section">
+                <h2>
+                    <i class="fa fa-filter"></i>
+                    Filtrer les consultations
+                </h2>
 
-            <!-- Cartes Mobile -->
-            <?php foreach ($consultations as $consultation): ?>
-                <div class="mobile-card">
-                    <div class="mobile-card-header">
-                        <div class="mobile-card-title"><?php echo htmlspecialchars($consultation['patient_name']); ?></div>
-                        <span class="status-badge status-<?php echo htmlspecialchars($consultation['status']); ?> mobile-card-status">
-                            <?php 
-                                $status_map = [
-                                    'pending' => '⏳ En attente',
-                                    'completed' => '✅ Complétée',
-                                    'cancelled' => '❌ Annulée'
-                                ];
-                                echo $status_map[$consultation['status']] ?? ucfirst($consultation['status']);
-                            ?>
-                        </span>
-                    </div>
-                    <div class="mobile-card-info">
-                        <strong>📅 <?php echo date('d/m/Y H:i', strtotime($consultation['date'])); ?></strong>
-                    </div>
-                    <div class="mobile-card-info">
-                        📧 <?php echo htmlspecialchars($consultation['email'] ?? 'N/A'); ?>
-                    </div>
-                    <div class="mobile-card-info">
-                        🏥 <?php echo htmlspecialchars($consultation['type'] ?? 'Standard'); ?>
-                    </div>
-                    <div class="mobile-card-footer">
-                        <a href="#" class="action-btn view" onclick="viewDetails(<?php echo htmlspecialchars(json_encode($consultation)); ?>); return false;">
-                            <i class="fa fa-eye"></i> Détails
-                        </a>
-                    </div>
+                <div class="filters">
+                    <a href="?filter=all" class="filter-btn <?php echo $filter === 'all' ? 'active' : ''; ?>">
+                        <i class="fa fa-list"></i> Toutes
+                    </a>
+                    <a href="?filter=today" class="filter-btn <?php echo $filter === 'today' ? 'active' : ''; ?>">
+                        <i class="fa fa-calendar-day"></i> Aujourd'hui
+                    </a>
+                    <a href="?filter=week" class="filter-btn <?php echo $filter === 'week' ? 'active' : ''; ?>">
+                        <i class="fa fa-calendar-week"></i> Cette semaine
+                    </a>
+                    <a href="?filter=month" class="filter-btn <?php echo $filter === 'month' ? 'active' : ''; ?>">
+                        <i class="fa fa-calendar"></i> Ce mois
+                    </a>
                 </div>
-            <?php endforeach; ?>
+
+                <!-- Table -->
+                <?php if (count($consultations) > 0): ?>
+                    <table class="consultations-table">
+                        <thead>
+                            <tr>
+                                <th>Date & Heure</th>
+                                <th>Patient</th>
+                                <th>Email</th>
+                                <th>Type</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($consultations as $c): ?>
+                                <tr>
+                                    <td><strong><?php echo date('d/m/Y H:i', strtotime($c['date'])); ?></strong></td>
+                                    <td><?php echo htmlspecialchars($c['patient_name']); ?></td>
+                                    <td><?php echo htmlspecialchars($c['email'] ?? 'N/A'); ?></td>
+                                    <td><?php echo htmlspecialchars($c['type'] ?? 'Standard'); ?></td>
+                                    <td>
+                                        <span class="status-badge status-<?php echo htmlspecialchars($c['status']); ?>">
+                                            <?php 
+                                                $labels = [
+                                                    'pending' => '⏳ En attente',
+                                                    'completed' => '✅ Complétée',
+                                                    'cancelled' => '❌ Annulée'
+                                                ];
+                                                echo $labels[$c['status']] ?? ucfirst($c['status']);
+                                            ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <div class="empty-state">
+                        <i class="fa fa-inbox"></i>
+                        <h3>Aucune consultation trouvée</h3>
+                        <p>Pas de consultation pour cette période.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 
-    <script>
-        function viewDetails(consultation) {
-            alert('Patient: ' + consultation.patient_name + '\n' +
-                  'Date: ' + new Date(consultation.date).toLocaleString('fr-FR') + '\n' +
-                  'Type: ' + consultation.type + '\n' +
-                  'Statut: ' + consultation.status);
-        }
-    </script>
-
-    <div style="height: 76px;"></div> <!-- Spacer pour mobile nav bar -->
+    <div style="height: 76px;"></div> <!-- Spacer pour mobile nav -->
 </body>
 </html>
