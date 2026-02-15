@@ -393,11 +393,11 @@ try {
                 </div>
                 <div class="stat-card">
                     <div class="label">Complétées</div>
-                    <div class="value"><?php echo count(array_filter($consultations, fn($c) => $c['status'] === 'completed')); ?></div>
+                    <div class="value"><?php echo count(array_filter($consultations, function($c) { return $c['status'] === 'completed'; })); ?></div>
                 </div>
                 <div class="stat-card">
                     <div class="label">En attente</div>
-                    <div class="value"><?php echo count(array_filter($consultations, fn($c) => $c['status'] === 'pending')); ?></div>
+                    <div class="value"><?php echo count(array_filter($consultations, function($c) { return $c['status'] === 'pending'; })); ?></div>
                 </div>
             </div>
 
