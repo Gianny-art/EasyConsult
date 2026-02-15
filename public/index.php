@@ -11,6 +11,21 @@ $isLoggedIn = isset($_SESSION['patient_id']);
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>EasyConsult - Téléconsultation Médicale Moderne</title>
+  <meta name="description" content="EasyConsult - Transformez votre accès à la santé. Consultez des médecins qualifiés en ligne, 24h/24. Paiement par USSD sécurisé. L'avenir de la télémédecine est ici.">
+  
+  <!-- Open Graph for Social Media -->
+  <meta property="og:title" content="EasyConsult - Consulter un Médecin en Ligne">
+  <meta property="og:description" content="Téléconsultation médicale moderne. Consultez partout, quand vous voulez. Santé accessible et abordable pour tous.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://easyconsult.wuaze.com">
+  <meta property="og:image" content="https://easyconsult.wuaze.com/images/og-image.png">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="EasyConsult - Consulter un Médecin en Ligne">
+  <meta name="twitter:description" content="Téléconsultation médicale moderne accessible à tous.">
+  <meta name="twitter:image" content="https://easyconsult.wuaze.com/images/og-image.png">
+  
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
