@@ -66,6 +66,11 @@ $emergency_tips = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Urgences - EasyConsult</title>
+    <meta name="description" content="Service d'urgences EasyConsult. Accédez à une consultation d'urgence 24h/24 en ligne. Médecins qualifiés disponibles immédiatement.">
+    <meta property="og:title" content="EasyConsult - Service d'Urgences">
+    <meta property="og:description" content="Consulter un médecin d'urgence en ligne maintenant. Disponible 24h/24, 7j/7.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://easyconsult.wuaze.com/urgences.php">
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>

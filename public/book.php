@@ -107,6 +107,11 @@ $max_date = date('Y-m-d', strtotime('+30 days'));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prendre RDV - EasyConsult</title>
+    <meta name="description" content="Prenez rendez-vous avec un médecin en ligne sur EasyConsult. Disponibilité immédiate, paiement sécurisé par USSD. Consultez facilement.">
+    <meta property="og:title" content="EasyConsult - Prendre un Rendez-vous">
+    <meta property="og:description" content="Réservez une consultation médicale en ligne en quelques clics. Médecins qualifiés disponibles 24h/24.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://easyconsult.wuaze.com/book.php">
     <link rel="stylesheet" href="./style.css">
     <style>
         .book-container {

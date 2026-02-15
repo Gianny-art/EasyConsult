@@ -109,6 +109,11 @@ if ($patient['imc']) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon Profil - EasyConsult</title>
+    <meta name="description" content="Gestion de votre profil EasyConsult. Consultez vos rendez-vous, votre historique médical et vos factures en toute sécurité.">
+    <meta property="og:title" content="EasyConsult - Mon Profil">
+    <meta property="og:description" content="Gérez votre compte EasyConsult et vos consultations médicales.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://easyconsult.wuaze.com/profile.php">
     <link rel="stylesheet" href="./style.css">
     <style>
         .profile-container {

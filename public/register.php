@@ -62,6 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inscription - EasyConsult</title>
+    <meta name="description" content="Inscrivez-vous sur EasyConsult et accédez à des consultations médicales en ligne. Paiement sécurisé par USSD. Santé accessible pour tous.">
+    <meta property="og:title" content="EasyConsult - Créer un Compte">
+    <meta property="og:description" content="Rejoignez EasyConsult et consultez des médecins qualifiés en ligne. Inscription gratuite et rapide.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://easyconsult.wuaze.com/register.php">
     <link rel="stylesheet" href="./style.css">
     <style>
         .auth-container {

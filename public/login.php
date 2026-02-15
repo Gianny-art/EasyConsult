@@ -119,6 +119,11 @@ if (isset($_GET['google_auth'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - EasyConsult</title>
+    <meta name="description" content="Connexion à EasyConsult - Accédez à votre compte pour consulter un médecin en ligne. Télémédecine moderne et accessible.">
+    <meta property="og:title" content="EasyConsult - Se Connecter">
+    <meta property="og:description" content="Connexion sécurisée à EasyConsult. Consultez des médecins en ligne en quelques clics.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://easyconsult.wuaze.com/login.php">
     <link rel="stylesheet" href="./style.css">
     <style>
         .auth-container {
@@ -438,6 +443,7 @@ if (isset($_GET['google_auth'])) {
             border-left: 3px solid #10b981;
         }
     </style>
+    <meta name="description" content="Connectez-vous à votre compte EasyConsult en tant que patient ou médecin pour accéder à vos rendez-vous, factures et plus encore.">
 </head>
 <body>
     <?php include __DIR__ . '/../lib/nav.php'; ?>
