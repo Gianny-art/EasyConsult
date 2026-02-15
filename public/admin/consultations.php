@@ -1,7 +1,7 @@
 <?php
 session_start();
-require '../../lib/db.php';
-require '../../lib/nav.php';
+require __DIR__ . '/../../lib/db.php';
+require __DIR__ . '/../../lib/nav.php';
 
 // Vérifier que le médecin est connecté
 if (!isset($_SESSION['doctor_id'])) {
